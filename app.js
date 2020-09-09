@@ -41,14 +41,26 @@ let system, clock, process, suffixId, processos, agendador, g, out;
 
 let conjunto = [
     [
+        { nome: "P1", chegada: "0", rajada: 8 },
+        { nome: "P2", chegada: "1", rajada: 4 },
+        { nome: "P3", chegada: "2", rajada: 9 },
+        { nome: "P4", chegada: "3", rajada: 5 }
+    ],
+    [
+        { nome: "P1", chegada: "0", rajada: 6 },
+        { nome: "P2", chegada: "0", rajada: 8 },
+        { nome: "P3", chegada: "0", rajada: 7 },
+        { nome: "P4", chegada: "0", rajada: 3 }
+    ],
+    [
         { nome: "P1", chegada: "0", rajada: 24 },
         { nome: "P2", chegada: "0", rajada: 3 },
         { nome: "P3", chegada: "0", rajada: 3 }
     ],
     [
         { nome: "P2", chegada: "0", rajada: 3 },
-        { nome: "P3", chegada: "1", rajada: 3 },
-        { nome: "P1", chegada: "2", rajada: 24 }
+        { nome: "P3", chegada: "0", rajada: 3 },
+        { nome: "P1", chegada: "0", rajada: 24 }
     ],
     [
         { nome: "1", chegada: "1", rajada: 7 },
@@ -70,7 +82,8 @@ function listProcesses() {
                 <th>Nome</th>
                 <th>Chegada</th>
                 <th>Rajada</th>
-                <th>Espera</th>
+                <th>Espera<br>Inicial</th>
+                <th>Espera<br>Adicional</th>
                 </tr>`;
     for (i in processos) {
         let p = processos[i];
@@ -79,7 +92,8 @@ function listProcesses() {
             `<td>${p.nome}</td>
              <td>${p.chegada}</td>
              <td>${p.rajadaImutable}</td>
-             <td>${p.espera}</td>` +
+             <td>${p.espera}</td>
+             <td>${p.esperaAd}</td>` +
             "</tr>";
     }
     out.innerHTML = tab;
@@ -104,8 +118,12 @@ function cpu(){
     if(p != process){
         if(!p.tocado) {
             p.tocado = 1;
-            p.espera = clock;
+            p.espera = clock - p.chegada;
+            p.esperaAd = 0;
         }
+        if(process.rajada > 0) process.wait = clock;
+        if(p.wait)
+            p.esperaAd = p.esperaAd + (clock-p.wait);
         novoBloco(clock, p.nome, p.color);
     }
     if(process != 0) document.getElementById("bk"+suffixId).innerHTML = clock;
@@ -126,6 +144,67 @@ function cpu(){
     clock++;   
 }
 
+function gerarEstatistica() {
+    let soma = 0;
+    for(i in processos) {
+        let p = processos[i];
+        soma += (p.espera + p.esperaAd);
+    }
+    out.innerHTML = out.innerHTML +
+    "Tempo médio de espera: " + soma / processos.length;
+}
+
+function getDataSet() {
+    let menuDados = document.getElementById("dados");
+    let dataSetNum = menuDados.options[menuDados.selectedIndex].value;
+    processos = conjunto[dataSetNum];
+    for (i in processos) {
+        let p = processos[i];
+        p.rajadaImutable = p.rajada;
+        p.color = i;
+    }
+    listProcesses(processos);
+}
+
+window.onload = function() {
+    let menuDados = document.getElementById("dados");
+    let menuAlg = document.getElementById("algoritmo");
+    let menuClk = document.getElementById("relogio");
+    let btnStart = document.getElementById("btnStart");
+    g = document.getElementById("grafico");
+    out = document.getElementById("processos");
+
+    menuDados.onclick = getDataSet;
+
+    btnStart.onclick = function() {
+        btnStart.style.display = 'none';
+        let AlgOpt = menuAlg.options[menuAlg.selectedIndex].value;
+        let ClockOpt = menuClk.options[menuClk.selectedIndex].value;
+        
+        g.innerHTML = "";
+        out.innerHTML = "";
+        clock = 0;
+        process = 0;
+        suffixId = 0;
+
+        getDataSet();
+
+        switch (AlgOpt) {
+            case "FCFS":
+                agendador = fcfs;
+                break;
+            case "SJF Preemptivo":
+                agendador = sjf_prep;
+                break;
+            case "SJF":
+                agendador = sjf;
+        }
+
+        clearInterval(system);
+        system = setInterval(cpu, ClockOpt);
+    }
+}
+
 function fcfs(clock){
     let pc = 0;
     for(let i = processos.length-1; i >= 0; i--) {
@@ -143,52 +222,26 @@ function fcfs(clock){
 }
 
 function sjf(clock){
-
+    if(process.rajada > 0){
+        process.rajada = (process.rajada)-1;
+        return process;
+    }
+    return sjf_prep(clock);
 }
 
-function gerarEstatistica() {
-    let soma = 0;
-    for(i in processos) {
+function sjf_prep(clock){
+    let pc = 0;
+    for(let i = processos.length-1; i >= 0; i--) {
         let p = processos[i];
-        soma += p.espera;
-    }
-    out.innerHTML = out.innerHTML +
-    "Tempo médio de espera: " + soma/ processos.length;
-}
 
-window.onload = function() {
-    let menuDados = document.getElementById("dados");
-    let menuAlg = document.getElementById("algoritmo");
-    let menuClk = document.getElementById("relogio");
-    let btnStart = document.getElementById("btnStart");
-    g = document.getElementById("grafico");
-    out = document.getElementById("processos");
-
-    btnStart.onclick = function() {
-        btnStart.style.display = 'none';
-        let dataSetNum = menuDados.options[menuDados.selectedIndex].value;
-        let AlgOpt = menuAlg.options[menuAlg.selectedIndex].value;
-        let ClockOpt = menuClk.options[menuClk.selectedIndex].value;
-        
-        g.innerHTML = "";
-        out.innerHTML = "";
-        clock = 0;
-        process = 0;
-        suffixId = 0;
-        processos = conjunto[dataSetNum];
-
-        for (i in processos) {
-            let p = processos[i];
-            p.rajadaImutable = p.rajada;
-            p.color = i;
+        if(p.rajada > 0 &&
+            clock >= p.chegada) {
+                if(pc == 0 || pc.rajada > p.rajada)
+                    pc = p;
         }
-
-        listProcesses(processos);
-        
-        if(AlgOpt == "FCFS") agendador = fcfs;
-        else agendador = sjf;
-
-        clearInterval(system);
-        system = setInterval(cpu, ClockOpt);
     }
+
+    pc.rajada = (pc.rajada)-1;
+    console.log(pc);
+    return pc;
 }
