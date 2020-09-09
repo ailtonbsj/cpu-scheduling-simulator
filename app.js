@@ -1,31 +1,67 @@
-let g = document.getElementById("grafico");
-let out = document.getElementById("processos");
+// Color Utils
+function padZero(str, len) {
+    len = len || 2;
+    var zeros = new Array(len).join('0');
+    return (zeros + str).slice(-len);
+}
 
-// Exemplo 1
-// let processos = [
-//     { nome: "P1", chegada: "0", rajada: 24 },
-//     { nome: "P2", chegada: "0", rajada: 3 },
-//     { nome: "P3", chegada: "0", rajada: 3 }
-// ];
-// Exemplo 2
-// let processos = [
-//     { nome: "P2", chegada: "0", rajada: 3 },
-//     { nome: "P3", chegada: "1", rajada: 3 },
-//     { nome: "P1", chegada: "2", rajada: 24 }
-// ];
+function invertColor(hex) {
+    if (hex.indexOf('#') === 0) {
+        hex = hex.slice(1);
+    }
+    // convert 3-digit hex to 6-digits.
+    if (hex.length === 3) {
+        hex = hex[0] + hex[0] + hex[1] + hex[1] + hex[2] + hex[2];
+    }
+    if (hex.length !== 6) {
+        throw new Error('Invalid HEX color.');
+    }
+    // invert color components
+    var r = (255 - parseInt(hex.slice(0, 2), 16)).toString(16),
+        g = (255 - parseInt(hex.slice(2, 4), 16)).toString(16),
+        b = (255 - parseInt(hex.slice(4, 6), 16)).toString(16);
+    // pad each with zeros and return
+    return '#' + padZero(r) + padZero(g) + padZero(b);
+}
 
-// Exemplo 3
-let processos = [
-    { nome: "1", chegada: "1", rajada: 7 },
-    { nome: "2", chegada: "1", rajada: 2 },
-    { nome: "3", chegada: "4", rajada: 20 },
-    { nome: "4", chegada: "9", rajada: 5 },
-    { nome: "5", chegada: "15", rajada: 10 },
-    { nome: "6", chegada: "16", rajada: 19 },
-    { nome: "7", chegada: "19", rajada: 14 },
-    { nome: "8", chegada: "25", rajada: 8 },
-    { nome: "9", chegada: "30", rajada: 20 },
-    { nome: "10", chegada: "31", rajada: 1 }
+let colors = ['#FF6633', '#FFB399', '#FF33FF', '#FFFF99', '#00B3E6', 
+                '#E6B333', '#3366E6', '#999966', '#99FF99', '#B34D4D',
+                '#80B300', '#809900', '#E6B3B3', '#6680B3', '#66991A', 
+                '#FF99E6', '#CCFF1A', '#FF1A66', '#E6331A', '#33FFCC',
+                '#66994D', '#B366CC', '#4D8000', '#B33300', '#CC80CC', 
+                '#66664D', '#991AFF', '#E666FF', '#4DB3FF', '#1AB399',
+                '#E666B3', '#33991A', '#CC9999', '#B3B31A', '#00E680', 
+                '#4D8066', '#809980', '#E6FF80', '#1AFF33', '#999933',
+                '#FF3380', '#CCCC00', '#66E64D', '#4D80CC', '#9900B3', 
+                '#E64D66', '#4DB380', '#FF4D4D', '#99E6E6', '#6666FF'];
+
+// APP
+                
+let system, clock, process, suffixId, processos, agendador, g, out;
+
+let conjunto = [
+    [
+        { nome: "P1", chegada: "0", rajada: 24 },
+        { nome: "P2", chegada: "0", rajada: 3 },
+        { nome: "P3", chegada: "0", rajada: 3 }
+    ],
+    [
+        { nome: "P2", chegada: "0", rajada: 3 },
+        { nome: "P3", chegada: "1", rajada: 3 },
+        { nome: "P1", chegada: "2", rajada: 24 }
+    ],
+    [
+        { nome: "1", chegada: "1", rajada: 7 },
+        { nome: "2", chegada: "1", rajada: 2 },
+        { nome: "3", chegada: "4", rajada: 20 },
+        { nome: "4", chegada: "9", rajada: 5 },
+        { nome: "5", chegada: "15", rajada: 10 },
+        { nome: "6", chegada: "16", rajada: 19 },
+        { nome: "7", chegada: "19", rajada: 14 },
+        { nome: "8", chegada: "25", rajada: 8 },
+        { nome: "9", chegada: "30", rajada: 20 },
+        { nome: "10", chegada: "31", rajada: 1 }
+    ]
 ];
 
 function listProcesses() {
@@ -33,8 +69,8 @@ function listProcesses() {
                 <tr>
                 <th>Nome</th>
                 <th>Chegada</th>
-                <th>Espera</th>
                 <th>Rajada</th>
+                <th>Espera</th>
                 </tr>`;
     for (i in processos) {
         let p = processos[i];
@@ -42,24 +78,20 @@ function listProcesses() {
             "<tr>" +
             `<td>${p.nome}</td>
              <td>${p.chegada}</td>
-             <td>${p.espera}</td>
-             <td>${p.rajada}</td>` +
+             <td>${p.rajadaImutable}</td>
+             <td>${p.espera}</td>` +
             "</tr>";
     }
     out.innerHTML = tab;
 }
 
-listProcesses(processos);
-
-let clock = 0;
-let process = 0;
-let suffixId = 0;
-
-function novoBloco(val, name) {
+function novoBloco(val, name, iColor) {
     suffixId++;
     g.innerHTML = g.innerHTML + 
-    "<span style='border: 1px solid white;'>"+val +" " + name+" <span id='bk"
-    + suffixId + "'></span></span>";
+    `<span style='background-color: ${colors[iColor]}; color: black;'>
+        ${val} <span style='font-weight: bold;'>${name}</span> <span id='bk${suffixId}'></span>
+    </span>`;
+    iColor++;
 }
 
 function cpu(){
@@ -74,7 +106,7 @@ function cpu(){
             p.tocado = 1;
             p.espera = clock;
         }
-        novoBloco(clock, p.nome);
+        novoBloco(clock, p.nome, p.color);
     }
     if(process != 0) document.getElementById("bk"+suffixId).innerHTML = clock;
 
@@ -94,8 +126,6 @@ function cpu(){
     clock++;   
 }
 
-let system = setInterval(cpu, 50);
-
 function fcfs(clock){
     let pc = 0;
     for(let i = processos.length-1; i >= 0; i--) {
@@ -112,7 +142,9 @@ function fcfs(clock){
     return pc;
 }
 
-let agendador = fcfs;
+function sjf(clock){
+
+}
 
 function gerarEstatistica() {
     let soma = 0;
@@ -122,4 +154,41 @@ function gerarEstatistica() {
     }
     out.innerHTML = out.innerHTML +
     "Tempo médio de espera: " + soma/ processos.length;
+}
+
+window.onload = function() {
+    let menuDados = document.getElementById("dados");
+    let menuAlg = document.getElementById("algoritmo");
+    let menuClk = document.getElementById("relogio");
+    let btnStart = document.getElementById("btnStart");
+    g = document.getElementById("grafico");
+    out = document.getElementById("processos");
+
+    btnStart.onclick = function() {
+        btnStart.style.display = 'none';
+        let dataSetNum = menuDados.options[menuDados.selectedIndex].value;
+        let AlgOpt = menuAlg.options[menuAlg.selectedIndex].value;
+        let ClockOpt = menuClk.options[menuClk.selectedIndex].value;
+        
+        g.innerHTML = "";
+        out.innerHTML = "";
+        clock = 0;
+        process = 0;
+        suffixId = 0;
+        processos = conjunto[dataSetNum];
+
+        for (i in processos) {
+            let p = processos[i];
+            p.rajadaImutable = p.rajada;
+            p.color = i;
+        }
+
+        listProcesses(processos);
+        
+        if(AlgOpt == "FCFS") agendador = fcfs;
+        else agendador = sjf;
+
+        clearInterval(system);
+        system = setInterval(cpu, ClockOpt);
+    }
 }
