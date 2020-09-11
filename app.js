@@ -41,38 +41,45 @@ let system, clock, process, suffixId, processos, agendador, g, out;
 
 let conjunto = [
     [
-        { nome: "P1", chegada: "0", rajada: 8 },
-        { nome: "P2", chegada: "1", rajada: 4 },
-        { nome: "P3", chegada: "2", rajada: 9 },
-        { nome: "P4", chegada: "3", rajada: 5 }
+        { nome: "P1", chegada: 0, rajada: 10, prioridade: 3},
+        { nome: "P2", chegada: 0, rajada: 1, prioridade: 1},
+        { nome: "P3", chegada: 0, rajada: 2, prioridade: 4},
+        { nome: "P4", chegada: 0, rajada: 1, prioridade: 5},
+        { nome: "P5", chegada: 0, rajada: 5, prioridade: 2}
     ],
     [
-        { nome: "P1", chegada: "0", rajada: 6 },
-        { nome: "P2", chegada: "0", rajada: 8 },
-        { nome: "P3", chegada: "0", rajada: 7 },
-        { nome: "P4", chegada: "0", rajada: 3 }
+        { nome: "P1", chegada: 0, rajada: 8 },
+        { nome: "P2", chegada: 1, rajada: 4 },
+        { nome: "P3", chegada: 2, rajada: 9 },
+        { nome: "P4", chegada: 3, rajada: 5 }
     ],
     [
-        { nome: "P1", chegada: "0", rajada: 24 },
-        { nome: "P2", chegada: "0", rajada: 3 },
-        { nome: "P3", chegada: "0", rajada: 3 }
+        { nome: "P1", chegada: 0, rajada: 6 },
+        { nome: "P2", chegada: 0, rajada: 8 },
+        { nome: "P3", chegada: 0, rajada: 7 },
+        { nome: "P4", chegada: 0, rajada: 3 }
     ],
     [
-        { nome: "P2", chegada: "0", rajada: 3 },
-        { nome: "P3", chegada: "0", rajada: 3 },
-        { nome: "P1", chegada: "0", rajada: 24 }
+        { nome: "P1", chegada: 0, rajada: 24 },
+        { nome: "P2", chegada: 0, rajada: 3 },
+        { nome: "P3", chegada: 0, rajada: 3 }
     ],
     [
-        { nome: "1", chegada: "1", rajada: 7 },
-        { nome: "2", chegada: "1", rajada: 2 },
-        { nome: "3", chegada: "4", rajada: 20 },
-        { nome: "4", chegada: "9", rajada: 5 },
-        { nome: "5", chegada: "15", rajada: 10 },
-        { nome: "6", chegada: "16", rajada: 19 },
-        { nome: "7", chegada: "19", rajada: 14 },
-        { nome: "8", chegada: "25", rajada: 8 },
-        { nome: "9", chegada: "30", rajada: 20 },
-        { nome: "10", chegada: "31", rajada: 1 }
+        { nome: "P2", chegada: 0, rajada: 3 },
+        { nome: "P3", chegada: 0, rajada: 3 },
+        { nome: "P1", chegada: 0, rajada: 24 }
+    ],
+    [
+        { nome: "1", chegada: 1, rajada: 7, prioridade: 1 },
+        { nome: "2", chegada: 1, rajada: 2, prioridade: 9 },
+        { nome: "3", chegada: 4, rajada: 20, prioridade: 4 },
+        { nome: "4", chegada: 9, rajada: 5, prioridade: 4 },
+        { nome: "5", chegada: 15, rajada: 10, prioridade: 5 },
+        { nome: "6", chegada: 16, rajada: 19, prioridade: 2 },
+        { nome: "7", chegada: 19, rajada: 14, prioridade: 4 },
+        { nome: "8", chegada: 25, rajada: 8, prioridade: 3 },
+        { nome: "9", chegada: 30, rajada: 20, prioridade: 8 },
+        { nome: "10", chegada: 31, rajada: 1, prioridade: 5 }
     ]
 ];
 
@@ -82,6 +89,7 @@ function listProcesses() {
                 <th>Nome</th>
                 <th>Chegada</th>
                 <th>Rajada</th>
+                <th>Prioridade</th>
                 <th>Espera<br>Inicial</th>
                 <th>Espera<br>Adicional</th>
                 </tr>`;
@@ -92,6 +100,7 @@ function listProcesses() {
             `<td>${p.nome}</td>
              <td>${p.chegada}</td>
              <td>${p.rajadaImutable}</td>
+             <td>${p.prioridade}</td>
              <td>${p.espera}</td>
              <td>${p.esperaAd}</td>` +
             "</tr>";
@@ -161,6 +170,7 @@ function getDataSet() {
     for (i in processos) {
         let p = processos[i];
         p.rajadaImutable = p.rajada;
+        if(!p.prioridade) p.prioridade = 0;
         p.color = i;
     }
     listProcesses(processos);
@@ -174,6 +184,9 @@ window.onload = function() {
     g = document.getElementById("grafico");
     out = document.getElementById("processos");
 
+    let itens = "";
+    for(let i=0; i < conjunto.length; i++) itens += `<option value="${i}">Conjunto ${i+1}</option>`;
+    menuDados.innerHTML = itens;
     menuDados.onclick = getDataSet;
 
     btnStart.onclick = function() {
@@ -221,14 +234,6 @@ function fcfs(clock){
     return pc;
 }
 
-function sjf(clock){
-    if(process.rajada > 0){
-        process.rajada = (process.rajada)-1;
-        return process;
-    }
-    return sjf_prep(clock);
-}
-
 function sjf_prep(clock){
     let pc = 0;
     for(let i = processos.length-1; i >= 0; i--) {
@@ -236,7 +241,7 @@ function sjf_prep(clock){
 
         if(p.rajada > 0 &&
             clock >= p.chegada) {
-                if(pc == 0 || pc.rajada > p.rajada)
+                if(pc == 0 || pc.rajada >= p.rajada)
                     pc = p;
         }
     }
@@ -244,4 +249,12 @@ function sjf_prep(clock){
     pc.rajada = (pc.rajada)-1;
     console.log(pc);
     return pc;
+}
+
+function sjf(clock){
+    if(process.rajada > 0){
+        process.rajada = (process.rajada)-1;
+        return process;
+    }
+    return sjf_prep(clock);
 }
