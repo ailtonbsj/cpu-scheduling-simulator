@@ -24,34 +24,41 @@ function invertColor(hex) {
     return '#' + padZero(r) + padZero(g) + padZero(b);
 }
 
-let colors = ['#FF6633', '#FFB399', '#FF33FF', '#FFFF99', '#00B3E6', 
-                '#E6B333', '#3366E6', '#999966', '#99FF99', '#B34D4D',
-                '#80B300', '#809900', '#E6B3B3', '#6680B3', '#66991A', 
-                '#FF99E6', '#CCFF1A', '#FF1A66', '#E6331A', '#33FFCC',
-                '#66994D', '#B366CC', '#4D8000', '#B33300', '#CC80CC', 
-                '#66664D', '#991AFF', '#E666FF', '#4DB3FF', '#1AB399',
-                '#E666B3', '#33991A', '#CC9999', '#B3B31A', '#00E680', 
-                '#4D8066', '#809980', '#E6FF80', '#1AFF33', '#999933',
-                '#FF3380', '#CCCC00', '#66E64D', '#4D80CC', '#9900B3', 
-                '#E64D66', '#4DB380', '#FF4D4D', '#99E6E6', '#6666FF'];
+let colors = ['#FF6633', '#FFB399', '#FF33FF', '#FFFF99', '#00B3E6',
+    '#E6B333', '#3366E6', '#999966', '#99FF99', '#B34D4D',
+    '#80B300', '#809900', '#E6B3B3', '#6680B3', '#66991A',
+    '#FF99E6', '#CCFF1A', '#FF1A66', '#E6331A', '#33FFCC',
+    '#66994D', '#B366CC', '#4D8000', '#B33300', '#CC80CC',
+    '#66664D', '#991AFF', '#E666FF', '#4DB3FF', '#1AB399',
+    '#E666B3', '#33991A', '#CC9999', '#B3B31A', '#00E680',
+    '#4D8066', '#809980', '#E6FF80', '#1AFF33', '#999933',
+    '#FF3380', '#CCCC00', '#66E64D', '#4D80CC', '#9900B3',
+    '#E64D66', '#4DB380', '#FF4D4D', '#99E6E6', '#6666FF'];
 
 // APP
-                
+
 let system, clock, process, suffixId, processos, agendador, g, out;
+let quantum = 0;
+let contQuantum = -1;
 
 let conjunto = [
     [
-        { nome: "P1", chegada: 0, rajada: 10, prioridade: 3},
-        { nome: "P2", chegada: 0, rajada: 1, prioridade: 1},
-        { nome: "P3", chegada: 0, rajada: 2, prioridade: 4},
-        { nome: "P4", chegada: 0, rajada: 1, prioridade: 5},
-        { nome: "P5", chegada: 0, rajada: 5, prioridade: 2}
+        { nome: "P1", chegada: 0, rajada: 24 },
+        { nome: "P2", chegada: 0, rajada: 3 },
+        { nome: "P3", chegada: 0, rajada: 3 }
     ],
     [
-        { nome: "P0", chegada: 0, rajada: 10, prioridade: 5},
-        { nome: "P1", chegada: 1, rajada: 6, prioridade: 4},
-        { nome: "P2", chegada: 3, rajada: 2, prioridade: 2},
-        { nome: "P3", chegada: 5, rajada: 4, prioridade: 0}
+        { nome: "P1", chegada: 0, rajada: 10, prioridade: 3 },
+        { nome: "P2", chegada: 0, rajada: 1, prioridade: 1 },
+        { nome: "P3", chegada: 0, rajada: 2, prioridade: 4 },
+        { nome: "P4", chegada: 0, rajada: 1, prioridade: 5 },
+        { nome: "P5", chegada: 0, rajada: 5, prioridade: 2 }
+    ],
+    [
+        { nome: "P0", chegada: 0, rajada: 10, prioridade: 5 },
+        { nome: "P1", chegada: 1, rajada: 6, prioridade: 4 },
+        { nome: "P2", chegada: 3, rajada: 2, prioridade: 2 },
+        { nome: "P3", chegada: 5, rajada: 4, prioridade: 0 }
     ],
     [
         { nome: "P1", chegada: 0, rajada: 8 },
@@ -101,7 +108,7 @@ function listProcesses() {
                 </tr>`;
     for (i in processos) {
         let p = processos[i];
-        tab += 
+        tab +=
             "<tr>" +
             `<td>${p.nome}</td>
              <td>${p.chegada}</td>
@@ -116,57 +123,66 @@ function listProcesses() {
 
 function novoBloco(val, name, iColor) {
     suffixId++;
-    g.innerHTML = g.innerHTML + 
-    `<span style='background-color: ${colors[iColor]}; color: black;'>
+    g.innerHTML = g.innerHTML +
+        `<span style='background-color: ${colors[iColor]}; color: black;'>
         ${val} <span style='font-weight: bold;'>${name}</span> <span id='bk${suffixId}'></span>
     </span>`;
     iColor++;
 }
 
-function cpu(){
-    console.log(clock);
+function cpu() {
+    try {
 
-    // Executa Escalonador
-    let p = agendador(clock);
+        // quantum
+        contQuantum = (contQuantum >= quantum-1) ? 0 : ++contQuantum;
 
-    // Desenha grafico
-    if(p != process){
-        if(!p.tocado) {
-            p.tocado = 1;
-            p.espera = clock - p.chegada;
-            p.esperaAd = 0;
+        // Executa Escalonador
+        let p = agendador(clock);
+
+        // Desenha grafico
+        if (p != process) {
+            if (!p.tocado) {
+                p.tocado = 1;
+                p.espera = clock - p.chegada;
+                p.esperaAd = 0;
+            }
+            if (process.rajada > 0) process.wait = clock;
+            if (p.wait)
+                p.esperaAd = p.esperaAd + (clock - p.wait);
+            novoBloco(clock, p.nome, p.color);
         }
-        if(process.rajada > 0) process.wait = clock;
-        if(p.wait)
-            p.esperaAd = p.esperaAd + (clock-p.wait);
-        novoBloco(clock, p.nome, p.color);
-    }
-    if(process != 0) document.getElementById("bk"+suffixId).innerHTML = clock;
+        if (process != 0) document.getElementById("bk" + suffixId).innerHTML = clock;
 
-    // Testa se existe processos a executar
-    let semRajadas = true;
-    for(i in processos) {
-        let p = processos[i];
-        if(p.rajada > 0) semRajadas = false;
-    }
-    if(semRajadas) {
+        // Testa se existe processos a executar
+        let semRajadas = true;
+        for (i in processos) {
+            let p = processos[i];
+            if (p.rajada > 0) semRajadas = false;
+        }
+        if (semRajadas) {
+            clearInterval(system);
+            listProcesses(processos);
+            gerarEstatistica();
+        }
+
+        process = p;
+        clock++;
+
+    } catch (error) {
+        console.error("PAROU>", error.message);
+        console.error("LINHA>", error.stack);
         clearInterval(system);
-        listProcesses(processos);
-        gerarEstatistica();
     }
-
-    process = p;
-    clock++;   
 }
 
 function gerarEstatistica() {
     let soma = 0;
-    for(i in processos) {
+    for (i in processos) {
         let p = processos[i];
         soma += (p.espera + p.esperaAd);
     }
     out.innerHTML = out.innerHTML +
-    "Tempo médio de espera: " + soma / processos.length;
+        "Tempo médio de espera: " + soma / processos.length;
 }
 
 function getDataSet() {
@@ -176,13 +192,13 @@ function getDataSet() {
     for (i in processos) {
         let p = processos[i];
         p.rajadaImutable = p.rajada;
-        if(!p.prioridade) p.prioridade = 0;
+        if (!p.prioridade) p.prioridade = 0;
         p.color = i;
     }
     listProcesses(processos);
 }
 
-window.onload = function() {
+window.onload = function () {
     let menuDados = document.getElementById("dados");
     let menuAlg = document.getElementById("algoritmo");
     let menuClk = document.getElementById("relogio");
@@ -191,15 +207,15 @@ window.onload = function() {
     out = document.getElementById("processos");
 
     let itens = "";
-    for(let i=0; i < conjunto.length; i++) itens += `<option value="${i}">Conjunto ${i+1}</option>`;
+    for (let i = 0; i < conjunto.length; i++) itens += `<option value="${i}">Conjunto ${i + 1}</option>`;
     menuDados.innerHTML = itens;
     menuDados.onclick = getDataSet;
 
-    btnStart.onclick = function() {
+    btnStart.onclick = function () {
         btnStart.style.display = 'none';
         let AlgOpt = menuAlg.options[menuAlg.selectedIndex].value;
         let ClockOpt = menuClk.options[menuClk.selectedIndex].value;
-        
+
         g.innerHTML = "";
         out.innerHTML = "";
         clock = 0;
@@ -222,7 +238,11 @@ window.onload = function() {
                 agendador = prio_prep;
                 break;
             case "Prioridade":
-                    agendador = prio;
+                agendador = prio;
+                break;
+            case "Round Robin":
+                agendador = rrobin;
+                quantum = 4;
         }
 
         clearInterval(system);
@@ -230,42 +250,40 @@ window.onload = function() {
     }
 }
 
-function fcfs(clock){
+function fcfs(clock) {
     let pc = 0;
-    for(let i = processos.length-1; i >= 0; i--) {
-        let p = processos[i];
-        
-        if(p.rajada > 0 &&
-            clock >= p.chegada ) {
-                    pc = p;
-        }
-    }
-
-    pc.rajada = (pc.rajada)-1;
-    console.log(pc);
-    return pc;
-}
-
-function sjf_prep(clock){
-    let pc = 0;
-    for(let i = processos.length-1; i >= 0; i--) {
+    for (let i = processos.length - 1; i >= 0; i--) {
         let p = processos[i];
 
-        if(p.rajada > 0 &&
+        if (p.rajada > 0 &&
             clock >= p.chegada) {
-                if(pc == 0 || pc.rajada >= p.rajada)
-                    pc = p;
+            pc = p;
         }
     }
 
-    pc.rajada = (pc.rajada)-1;
-    console.log(pc);
+    pc.rajada = (pc.rajada) - 1;
     return pc;
 }
 
-function sjf(clock){
-    if(process.rajada > 0){
-        process.rajada = (process.rajada)-1;
+function sjf_prep(clock) {
+    let pc = 0;
+    for (let i = processos.length - 1; i >= 0; i--) {
+        let p = processos[i];
+
+        if (p.rajada > 0 &&
+            clock >= p.chegada) {
+            if (pc == 0 || pc.rajada >= p.rajada)
+                pc = p;
+        }
+    }
+
+    pc.rajada = (pc.rajada) - 1;
+    return pc;
+}
+
+function sjf(clock) {
+    if (process.rajada > 0) {
+        process.rajada = (process.rajada) - 1;
         return process;
     }
     return sjf_prep(clock);
@@ -273,33 +291,83 @@ function sjf(clock){
 
 function prio_prep(clock) {
     let pc = 0;
-    for(let i = processos.length-1; i >= 0; i--) {
+    for (let i = processos.length - 1; i >= 0; i--) {
         let p = processos[i];
 
-        if(p.rajada > 0 &&
+        if (p.rajada > 0 &&
             clock >= p.chegada) {
-                if(pc == 0) {
-                    pc = p;
-                }
-                else if (p.prioridade < pc.prioridade) {
-                    pc = p;
-                }
-                else if(p.prioridade == pc.prioridade) {
-                    let pChegadaRel = p.wait ? p.wait : p.chegada;
-                    let pcChegadaRel = pc.wait ? pc.wait : pc.chegada;
-                    if(pChegadaRel <= pcChegadaRel) pc = p;
-                }
+            if (pc == 0) {
+                pc = p;
+            }
+            else if (p.prioridade < pc.prioridade) {
+                pc = p;
+            }
+            else if (p.prioridade == pc.prioridade) {
+                let pChegadaRel = p.wait ? p.wait : p.chegada;
+                let pcChegadaRel = pc.wait ? pc.wait : pc.chegada;
+                if (pChegadaRel <= pcChegadaRel) pc = p;
+            }
         }
+    }
+
+    pc.rajada = (pc.rajada) - 1;
+    return pc;
+}
+
+function prio(clock) {
+    if (process.rajada > 0) {
+        process.rajada = (process.rajada) - 1;
+        return process;
+    }
+    return prio_prep(clock);
+}
+
+function getReadyProcesses(clock, listProcesses) {
+    return listProcesses.filter(proc => proc.rajada > 0 && proc.chegada <= clock);
+}
+
+function printQueueNames(queue){
+    let nomes = queue.map(proc => proc.nome);
+    console.log(nomes.join(","));
+}
+
+let queue = [];
+function rrobin(clock) {
+    let pc = 0;
+    let readyProcesses = getReadyProcesses(clock, processos);
+
+    // quantum interrupt
+    if(!contQuantum) {
+        console.log("INTERRUPCAO em", clock);
+        // enfileira todos prontos que nao tao na fila
+        readyProcesses.map(proc => {
+            let isIncluded = false;
+            if(queue.length > 0) {
+                isIncluded = queue.reduce( (acc, curr) => acc || (curr == proc) , false);
+            }
+            if(!isIncluded) queue.push(proc);
+        });
+        printQueueNames(queue);
+
+        do {
+            pc = queue.shift();
+        } while(pc.rajada == 0);
+
+        console.log(pc);
+    } else {
+        for(let i = readyProcesses.length-1; i >= 0; i--) {
+            let p = readyProcesses[i];
+            if(pc == 0) pc = p;
+            else {
+                let pChegadaRel = p.wait ? p.wait : p.chegada;
+                let pcChegadaRel = pc.wait ? pc.wait : pc.chegada;
+                if(pChegadaRel <= pcChegadaRel) pc = p;
+            }
+        }
+
+        console.log(clock);
     }
 
     pc.rajada = (pc.rajada)-1;
     return pc;
-}
-
-function prio(clock){
-    if(process.rajada > 0){
-        process.rajada = (process.rajada)-1;
-        return process;
-    }
-    return prio_prep(clock);
 }
