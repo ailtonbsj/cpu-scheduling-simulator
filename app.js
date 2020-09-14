@@ -48,6 +48,12 @@ let conjunto = [
         { nome: "P5", chegada: 0, rajada: 5, prioridade: 2}
     ],
     [
+        { nome: "P0", chegada: 0, rajada: 10, prioridade: 5},
+        { nome: "P1", chegada: 1, rajada: 6, prioridade: 4},
+        { nome: "P2", chegada: 3, rajada: 2, prioridade: 2},
+        { nome: "P3", chegada: 5, rajada: 4, prioridade: 0}
+    ],
+    [
         { nome: "P1", chegada: 0, rajada: 8 },
         { nome: "P2", chegada: 1, rajada: 4 },
         { nome: "P3", chegada: 2, rajada: 9 },
@@ -211,6 +217,12 @@ window.onload = function() {
                 break;
             case "SJF":
                 agendador = sjf;
+                break;
+            case "Prioridade Preemptivo":
+                agendador = prio_prep;
+                break;
+            case "Prioridade":
+                    agendador = prio;
         }
 
         clearInterval(system);
@@ -257,4 +269,37 @@ function sjf(clock){
         return process;
     }
     return sjf_prep(clock);
+}
+
+function prio_prep(clock) {
+    let pc = 0;
+    for(let i = processos.length-1; i >= 0; i--) {
+        let p = processos[i];
+
+        if(p.rajada > 0 &&
+            clock >= p.chegada) {
+                if(pc == 0) {
+                    pc = p;
+                }
+                else if (p.prioridade < pc.prioridade) {
+                    pc = p;
+                }
+                else if(p.prioridade == pc.prioridade) {
+                    let pChegadaRel = p.wait ? p.wait : p.chegada;
+                    let pcChegadaRel = pc.wait ? pc.wait : pc.chegada;
+                    if(pChegadaRel <= pcChegadaRel) pc = p;
+                }
+        }
+    }
+
+    pc.rajada = (pc.rajada)-1;
+    return pc;
+}
+
+function prio(clock){
+    if(process.rajada > 0){
+        process.rajada = (process.rajada)-1;
+        return process;
+    }
+    return prio_prep(clock);
 }
