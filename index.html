@@ -14,10 +14,15 @@
         table, td, tr, th {
             border: 1px solid white;
         }
+        #iquantum {
+            width: 15px;
+        }
     </style>
 </head>
 <body>
+    <label>Processos</label>
     <select id="dados"></select>
+    <label>Algoritmo</label>
     <select id="algoritmo">
         <option>Round Robin</option>
         <option>Prioridade</option>
@@ -26,12 +31,15 @@
         <option>SJF Preemptivo</option>
         <option>FCFS</option>
     </select>
+    <label>Timer</label>
     <select id="relogio">
         <option value="1">1 ms</option>
         <option value="500">500 ms</option>
         <option value="1000">1000 ms</option>
         <option value="2000">2000 ms</option>
     </select>
+    <label>Quantum</label>
+    <input id="iquantum" type="text" value="4">
     <input id="btnStart" type="button" value="Iniciar!">
     <br><br>
     <div id="processos"></div>

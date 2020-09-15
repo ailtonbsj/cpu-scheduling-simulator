@@ -37,7 +37,8 @@ let colors = ['#FF6633', '#FFB399', '#FF33FF', '#FFFF99', '#00B3E6',
 
 // APP
 
-let system, clock, process, suffixId, processos, agendador, g, out;
+let system, clock, suffixId, processos, agendador, g, out;
+let previousProc = 0;
 let quantum = 0;
 let contQuantum = -1;
 
@@ -134,24 +135,25 @@ function cpu() {
     try {
 
         // quantum
-        contQuantum = (contQuantum >= quantum-1) ? 0 : ++contQuantum;
+        contQuantum = (contQuantum >= quantum - 1) ? 0 : ++contQuantum;
 
         // Executa Escalonador
         let p = agendador(clock);
 
         // Desenha grafico
-        if (p != process) {
+        if (p != previousProc) {
             if (!p.tocado) {
                 p.tocado = 1;
                 p.espera = clock - p.chegada;
                 p.esperaAd = 0;
             }
-            if (process.rajada > 0) process.wait = clock;
+            if (previousProc.rajada > 0) previousProc.wait = clock;
             if (p.wait)
                 p.esperaAd = p.esperaAd + (clock - p.wait);
+            contQuantum = 0;
             novoBloco(clock, p.nome, p.color);
         }
-        if (process != 0) document.getElementById("bk" + suffixId).innerHTML = clock;
+        if (previousProc != 0) document.getElementById("bk" + suffixId).innerHTML = clock;
 
         // Testa se existe processos a executar
         let semRajadas = true;
@@ -165,7 +167,7 @@ function cpu() {
             gerarEstatistica();
         }
 
-        process = p;
+        previousProc = p;
         clock++;
 
     } catch (error) {
@@ -202,6 +204,7 @@ window.onload = function () {
     let menuDados = document.getElementById("dados");
     let menuAlg = document.getElementById("algoritmo");
     let menuClk = document.getElementById("relogio");
+    let iQuant = document.getElementById("iquantum");
     let btnStart = document.getElementById("btnStart");
     g = document.getElementById("grafico");
     out = document.getElementById("processos");
@@ -242,7 +245,7 @@ window.onload = function () {
                 break;
             case "Round Robin":
                 agendador = rrobin;
-                quantum = 4;
+                quantum = parseInt(iQuant.value);
         }
 
         clearInterval(system);
@@ -326,7 +329,7 @@ function getReadyProcesses(clock, listProcesses) {
     return listProcesses.filter(proc => proc.rajada > 0 && proc.chegada <= clock);
 }
 
-function printQueueNames(queue){
+function printQueueNames(queue) {
     let nomes = queue.map(proc => proc.nome);
     console.log(nomes.join(","));
 }
@@ -336,38 +339,84 @@ function rrobin(clock) {
     let pc = 0;
     let readyProcesses = getReadyProcesses(clock, processos);
 
+    let startedProcesses = readyProcesses.filter(proc => proc.chegada == clock);
+    startedProcesses.forEach(proc => queue.push(proc));
+    printQueueNames(queue);
+
+    
+    if(previousProc.rajada == 0){
+        console.log("EXIT", clock);
+        queue = queue.filter(proc => proc != previousProc);
+        pc = queue.shift();
+    } else {
+        if(!contQuantum) {
+            console.log("INTERRUPT", clock);
+            if (previousProc != 0) queue.push(previousProc);
+            if(queue.length > 0) pc = queue.shift();
+        } else {
+            console.log(clock);
+            if(!previousProc) pc = queue.shift();
+            else pc = previousProc;
+        }
+    }
+
+    if(pc != 0) pc.rajada = (pc.rajada) - 1;
+    return pc;
+}
+
+function rrobinX(clock) {
+    let pc = 0;
+    let readyProcesses = getReadyProcesses(clock, processos);
+
     // quantum interrupt
-    if(!contQuantum) {
+    if (!contQuantum) {
         console.log("INTERRUPCAO em", clock);
         // enfileira todos prontos que nao tao na fila
         readyProcesses.map(proc => {
             let isIncluded = false;
-            if(queue.length > 0) {
-                isIncluded = queue.reduce( (acc, curr) => acc || (curr == proc) , false);
+            if (queue.length > 0) {
+                isIncluded = queue.reduce((acc, curr) => acc || (curr == proc), false);
             }
-            if(!isIncluded) queue.push(proc);
+            if (!isIncluded) queue.push(proc);
         });
+
+        // remove item mortos
+        queue = queue.filter(proc => {
+            let isAlive = false;
+            if (readyProcesses.length > 0) {
+                isAlive = readyProcesses.reduce((acc, curr) => acc || (curr == proc), false);
+            }
+            return isAlive;
+        });
+
         printQueueNames(queue);
 
         do {
             pc = queue.shift();
-        } while(pc.rajada == 0);
+            queue.push(pc);
+        } while (pc == process && queue.length > 1);
 
+        // do {
+        //     pc = queue.shift();
+        // } while(pc.rajada == 0 || (pc == process && queue.length > 1 ));
+        // queue.push(pc);
+
+        printQueueNames(queue);
         console.log(pc);
     } else {
-        for(let i = readyProcesses.length-1; i >= 0; i--) {
+        for (let i = readyProcesses.length - 1; i >= 0; i--) {
             let p = readyProcesses[i];
-            if(pc == 0) pc = p;
+            if (pc == 0) pc = p;
             else {
                 let pChegadaRel = p.wait ? p.wait : p.chegada;
                 let pcChegadaRel = pc.wait ? pc.wait : pc.chegada;
-                if(pChegadaRel <= pcChegadaRel) pc = p;
+                if (pChegadaRel <= pcChegadaRel) pc = p;
             }
         }
 
         console.log(clock);
     }
 
-    pc.rajada = (pc.rajada)-1;
+    pc.rajada = (pc.rajada) - 1;
     return pc;
 }
