@@ -38,9 +38,10 @@ let colors = ['#FF6633', '#FFB399', '#FF33FF', '#FFFF99', '#00B3E6',
 // APP
 
 let system, clock, suffixId, processos, agendador, g, out;
-let previousProc = 0;
+let previousProc;
 let quantum = 0;
 let contQuantum = -1;
+let queue = [];
 
 let conjunto = [
     [
@@ -133,7 +134,6 @@ function novoBloco(val, name, iColor) {
 
 function cpu() {
     try {
-
         // quantum
         contQuantum = (contQuantum >= quantum - 1) ? 0 : ++contQuantum;
 
@@ -178,11 +178,7 @@ function cpu() {
 }
 
 function gerarEstatistica() {
-    let soma = 0;
-    for (i in processos) {
-        let p = processos[i];
-        soma += (p.espera + p.esperaAd);
-    }
+    let soma = processos.reduce( (acc, p) => acc +=  (p.espera + p.esperaAd), 0 );
     out.innerHTML = out.innerHTML +
         "Tempo médio de espera: " + soma / processos.length;
 }
@@ -222,7 +218,7 @@ window.onload = function () {
         g.innerHTML = "";
         out.innerHTML = "";
         clock = 0;
-        process = 0;
+        previousProc = 0;
         suffixId = 0;
 
         getDataSet();
@@ -251,6 +247,15 @@ window.onload = function () {
         clearInterval(system);
         system = setInterval(cpu, ClockOpt);
     }
+}
+
+function getReadyProcesses(clock, listProcesses) {
+    return listProcesses.filter(proc => proc.rajada > 0 && proc.chegada <= clock);
+}
+
+function printQueueNames(queue) {
+    let nomes = queue.map(proc => proc.nome);
+    console.log(nomes.join(","));
 }
 
 function fcfs(clock) {
@@ -285,9 +290,9 @@ function sjf_prep(clock) {
 }
 
 function sjf(clock) {
-    if (process.rajada > 0) {
-        process.rajada = (process.rajada) - 1;
-        return process;
+    if (previousProc.rajada > 0) {
+        previousProc.rajada = (previousProc.rajada) - 1;
+        return previousProc;
     }
     return sjf_prep(clock);
 }
@@ -318,23 +323,13 @@ function prio_prep(clock) {
 }
 
 function prio(clock) {
-    if (process.rajada > 0) {
-        process.rajada = (process.rajada) - 1;
-        return process;
+    if (previousProc.rajada > 0) {
+        previousProc.rajada = (previousProc.rajada) - 1;
+        return previousProc;
     }
     return prio_prep(clock);
 }
 
-function getReadyProcesses(clock, listProcesses) {
-    return listProcesses.filter(proc => proc.rajada > 0 && proc.chegada <= clock);
-}
-
-function printQueueNames(queue) {
-    let nomes = queue.map(proc => proc.nome);
-    console.log(nomes.join(","));
-}
-
-let queue = [];
 function rrobin(clock) {
     let pc = 0;
     let readyProcesses = getReadyProcesses(clock, processos);
@@ -342,7 +337,6 @@ function rrobin(clock) {
     let startedProcesses = readyProcesses.filter(proc => proc.chegada == clock);
     startedProcesses.forEach(proc => queue.push(proc));
     printQueueNames(queue);
-
     
     if(previousProc.rajada == 0){
         console.log("EXIT", clock);
@@ -361,62 +355,5 @@ function rrobin(clock) {
     }
 
     if(pc != 0) pc.rajada = (pc.rajada) - 1;
-    return pc;
-}
-
-function rrobinX(clock) {
-    let pc = 0;
-    let readyProcesses = getReadyProcesses(clock, processos);
-
-    // quantum interrupt
-    if (!contQuantum) {
-        console.log("INTERRUPCAO em", clock);
-        // enfileira todos prontos que nao tao na fila
-        readyProcesses.map(proc => {
-            let isIncluded = false;
-            if (queue.length > 0) {
-                isIncluded = queue.reduce((acc, curr) => acc || (curr == proc), false);
-            }
-            if (!isIncluded) queue.push(proc);
-        });
-
-        // remove item mortos
-        queue = queue.filter(proc => {
-            let isAlive = false;
-            if (readyProcesses.length > 0) {
-                isAlive = readyProcesses.reduce((acc, curr) => acc || (curr == proc), false);
-            }
-            return isAlive;
-        });
-
-        printQueueNames(queue);
-
-        do {
-            pc = queue.shift();
-            queue.push(pc);
-        } while (pc == process && queue.length > 1);
-
-        // do {
-        //     pc = queue.shift();
-        // } while(pc.rajada == 0 || (pc == process && queue.length > 1 ));
-        // queue.push(pc);
-
-        printQueueNames(queue);
-        console.log(pc);
-    } else {
-        for (let i = readyProcesses.length - 1; i >= 0; i--) {
-            let p = readyProcesses[i];
-            if (pc == 0) pc = p;
-            else {
-                let pChegadaRel = p.wait ? p.wait : p.chegada;
-                let pcChegadaRel = pc.wait ? pc.wait : pc.chegada;
-                if (pChegadaRel <= pcChegadaRel) pc = p;
-            }
-        }
-
-        console.log(clock);
-    }
-
-    pc.rajada = (pc.rajada) - 1;
     return pc;
 }
