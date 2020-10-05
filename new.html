@@ -5,7 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Escalonador com Paginação</title>
-    <script src="https://unpkg.com/vue"></script>
+    <script src="vue.js"></script>
     <style>
         /* Diagram of states */
         .process {
@@ -34,7 +34,13 @@
 
 <body>
     <div id="app">
-        <button @click="passOneTick">Iniciar</button>
+        Conjunto
+        <select id="dataset" @change="setProcesses">
+            <option></option>
+            <option v-for="(p, i) in dataset" :value="i">{{ i }}</option>
+        </select>
+        <button @click="passOneTick">Proximo Passo de CPU</button>
+        <button @click="passTenTick">10 Passos de CPU</button>
         <div>
             <div class="process" v-for="process in diagram">
                 {{ process.id }}
