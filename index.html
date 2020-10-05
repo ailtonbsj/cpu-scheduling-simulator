@@ -1,56 +1,73 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CPU Scheduling Simulator</title>
+    <title>Escalonador com Paginação</title>
+    <script src="vue.js"></script>
     <style>
-        body {
-            background-color: black;
-            color: lightgreen;
-            font-family: 'Courier New', Courier, monospace;
-            font-size: 20px;
+        * {
+            font-family: monospace;
         }
-        table, td, tr, th {
-            border: 1px solid white;
+        /* Diagram of states */
+        .process {
+            position: relative; margin: 10px 0;
         }
-        #iquantum {
-            width: 15px;
+
+        .interval {
+            display: block;
+            background-color: red;
+            position: absolute;
+            top: 0;
+            height: 20px;
+        }
+
+        .ready {
+            margin: 7px 0;
+            height: 5px;
+            background-color: #FF0000AA;
+        }
+
+        .wait {
+            background-color: #FF0000AA;
         }
     </style>
 </head>
+
 <body>
-    <label>Processos</label>
-    <select id="dados"></select>
-    <label>Algoritmo</label>
-    <select id="algoritmo">
-        <option>Round Robin</option>
-        <option>Prioridade</option>
-        <option>Prioridade Preemptivo</option>
-        <option>SJF</option>
-        <option>SJF Preemptivo</option>
-        <option>FCFS</option>
-    </select>
-    <label>Timer</label>
-    <select id="relogio">
-        <option value="1">1 ms</option>
-        <option value="500">500 ms</option>
-        <option value="1000">1000 ms</option>
-        <option value="2000">2000 ms</option>
-    </select>
-    <label>Quantum</label>
-    <input id="iquantum" type="text" value="4">
-    <input id="btnStart" type="button" value="Iniciar!">
-    <br><br>
-    <div id="processos"></div>
-    <br>
-    <div id="grafico"><br></div>
+    <div id="app">
+        Conjunto
+        <select @change="setProcesses">
+            <option></option>
+            <option v-for="(p, i) in dataset" :value="i">{{ i }}</option>
+        </select>
+        Escalonador
+        <select @change="setScheduling">
+            <option>Round Robin</option>
+            <option>FCFS</option>
+        </select>
+        Quantum
+        <input type="number" min="0" max="20" v-model="quantum">
+        <button @click="passOneTick">Proximo Passo de CPU</button>
+        <button @click="passTenTick">10 Passos de CPU</button>
+        <div>
+            <div class="process" v-for="process in diagram">
+                {{ process.id }}
+                <span class="interval" v-for="int in process.timeline"
+                    :style="{ left: 20 + (int.start*10) + 'px', width: (int.end-int.start)*10 +'px' }"
+                    :class="{ ready: int.state == 'ready', wait: int.state == 'wait' }" :title="`[ ${int.start} , ${int.end} [`"></span>
+            </div>
+        </div>
+    </div>
     <h1>Equipe:</h1>
-    Cícera Adejane Moreira da Silva<br>
-    Gean da Silva Vieira<br>
-    Glendha Rayla da Silva Oliveira<br>
-    João Marllon de Freitas Silva<br>
-    José Ailton Batista da Silva<br>
-    <script src="app.js"></script>
+    <h4>Cícera Adejane Moreira da Silva</h4>
+    <h4>Gean da Silva Vieira</h4>
+    <h4>Glendha Rayla da Silva Oliveira</h4>
+    <h4>João Marllon de Freitas Silva</h4>
+    <h4>José Ailton Batista da Silva</h4>
+    <a href="old.html">Acesse a versão antiga do simulador!</a>
+    <script src="simu.js"></script>
 </body>
+
 </html>

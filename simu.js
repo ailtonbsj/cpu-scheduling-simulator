@@ -61,17 +61,19 @@ let v = new Vue({
         diagram: [],
         clock: 0,
         queueProcesses: [],
-        currentProcess: null
+        currentProcess: null,
+        quantum: 4,
+        contQuantum: 0
     },
     methods: {
-        setProcesses() {
+        setProcesses(e) {
             this.processes = []
             this.diagram = []
             this.clock = 0
             this.queueProcesses = []
             this.currentProcess = null
-            let seletedValue = document.getElementById('dataset').value
-            if( seletedValue != '') this.processes = dataset[seletedValue]
+            let seletedValue = e.target.value
+            if (seletedValue != '') this.processes = dataset[seletedValue]
             this.processes.forEach(proc => {
                 this.diagram.push({ id: proc.id, timeline: [] })
             })
@@ -80,32 +82,55 @@ let v = new Vue({
             let newProcesses = this.processes.filter(proc => proc.start == this.clock)
             newProcesses.forEach(proc => this.queueProcesses.push(proc))
 
-            this.fcfs()
+            this.scheduling()
 
             if (this.currentProcess) {
                 if (this.currentProcess.burst == 0) this.currentProcess = null
                 else {
                     let timelines = this.diagram.find(dProc => dProc.id == this.currentProcess.id).timeline
-                    let runTimelines = timelines.filter(tl => tl.state == 'run')
-                    if (runTimelines.length == 0) {
-                        timelines.push({ start: this.clock, end: this.clock + 1, state: 'run' })
-                    }
-                    else runTimelines[runTimelines.length - 1].end = this.clock + 1
+                    console.log(timelines.length);
+                    if (timelines.length > 0) {
+                        if (timelines[timelines.length - 1].state != 'run') {
+                            timelines.push({ start: this.clock, end: this.clock + 1, state: 'run' })
+                        } else {
+                            let runTimelines = timelines.filter(tl => tl.state == 'run')
+                            runTimelines[runTimelines.length - 1].end = this.clock + 1
+                        }
+                    } else timelines.push({ start: this.clock, end: this.clock + 1, state: 'run' })
                     this.currentProcess.burst--
                 }
             }
+
             this.queueProcesses.forEach(proc => {
                 let timelines = this.diagram.find(dProc => dProc.id == proc.id).timeline
-                let readyTimelines = timelines.filter(tl => tl.state == 'ready')
-                if (readyTimelines.length == 0)
+                if(timelines.length > 0) {
+                    if(timelines[timelines.length-1].state != 'ready') {
+                        timelines.push({ start: this.clock, end: this.clock + 1, state: 'ready' })
+                    } else {
+                        let runTimelines = timelines.filter(tl => tl.state == 'ready')
+                        runTimelines[runTimelines.length - 1].end = this.clock + 1
+                    }
+                } else {
                     timelines.push({ start: this.clock, end: this.clock + 1, state: 'ready' })
-                else readyTimelines[readyTimelines.length - 1].end = this.clock + 1
+                }
             })
+
+            
 
             this.clock++
         },
         passTenTick() {
-            for(let i = 0; i < 10; i++) this.passOneTick()
+            for (let i = 0; i < 10; i++) this.passOneTick()
+        },
+        setScheduling(e) {
+            switch (e.target.value) {
+                case 'FCFS':
+                    this.scheduling = this.fcfs
+                    break
+                case 'Round Robin':
+                    this.scheduling = this.roundRobin
+                    break;
+            }
         },
         fcfs() {
             if (this.queueProcesses.length > 0) {
@@ -113,6 +138,26 @@ let v = new Vue({
                     this.currentProcess = this.queueProcesses.shift()
                 }
             }
+        },
+        roundRobin() {
+            if (this.queueProcesses.length > 0) {
+                if (this.currentProcess != null) {
+                    if (this.currentProcess.burst == 0) {
+                        this.currentProcess = this.queueProcesses.shift()
+                        this.contQuantum = 1
+                    } else if (this.contQuantum == this.quantum) {
+                        this.queueProcesses.push(this.currentProcess)
+                        this.currentProcess = this.queueProcesses.shift()
+                        this.contQuantum = 1
+                    } else this.contQuantum++
+                } else {
+                    this.currentProcess = this.queueProcesses.shift()
+                    this.contQuantum = 1
+                }
+            }
+        },
+        scheduling() {
+            this.roundRobin()
         }
     }
 })

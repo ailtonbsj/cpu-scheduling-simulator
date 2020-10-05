@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CPU Scheduling Simulator</title>
+    <style>
+        body {
+            background-color: black;
+            color: lightgreen;
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 20px;
+        }
+        table, td, tr, th {
+            border: 1px solid white;
+        }
+        #iquantum {
+            width: 15px;
+        }
+    </style>
+</head>
+<body>
+    <label>Processos</label>
+    <select id="dados"></select>
+    <label>Algoritmo</label>
+    <select id="algoritmo">
+        <option>Round Robin</option>
+        <option>Prioridade</option>
+        <option>Prioridade Preemptivo</option>
+        <option>SJF</option>
+        <option>SJF Preemptivo</option>
+        <option>FCFS</option>
+    </select>
+    <label>Timer</label>
+    <select id="relogio">
+        <option value="1">1 ms</option>
+        <option value="500">500 ms</option>
+        <option value="1000">1000 ms</option>
+        <option value="2000">2000 ms</option>
+    </select>
+    <label>Quantum</label>
+    <input id="iquantum" type="text" value="4">
+    <input id="btnStart" type="button" value="Iniciar!">
+    <br><br>
+    <div id="processos"></div>
+    <br>
+    <div id="grafico"><br></div>
+    <h1>Equipe:</h1>
+    Cícera Adejane Moreira da Silva<br>
+    Gean da Silva Vieira<br>
+    Glendha Rayla da Silva Oliveira<br>
+    João Marllon de Freitas Silva<br>
+    José Ailton Batista da Silva<br>
+    <script src="app.js"></script>
+</body>
+</html>
