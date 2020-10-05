@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Escalonador com Paginação</title>
+    <script src="https://unpkg.com/vue"></script>
+    <style>
+        /* Diagram of states */
+        .process {
+            position: relative; margin: 10px 0;
+        }
+
+        .interval {
+            display: block;
+            background-color: red;
+            position: absolute;
+            top: 0;
+            height: 20px;
+        }
+
+        .ready {
+            margin: 7px 0;
+            height: 5px;
+            background-color: #FF0000AA;
+        }
+
+        .wait {
+            background-color: #FF0000AA;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="app">
+        <button @click="passOneTick">Iniciar</button>
+        <div>
+            <div class="process" v-for="process in diagram">
+                {{ process.id }}
+                <span class="interval" v-for="int in process.timeline"
+                    :style="{ left: 20 + (int.start*10) + 'px', width: (int.end-int.start)*10 +'px' }"
+                    :class="{ ready: int.state == 'ready', wait: int.state == 'wait' }" :title="`[ ${int.start} , ${int.end} [`"></span>
+            </div>
+        </div>
+    </div>
+    <script src="simu.js"></script>
+</body>
+
+</html>
