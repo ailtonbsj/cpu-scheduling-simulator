@@ -53,30 +53,57 @@ const dataset = [
     ]
 ]
 
-let v = new Vue({
+let instance = new Vue({
     el: '#app',
     data: {
         dataset,
+        datasetIndex: 7,
+        schedulingName: 'Round Robin',
+        quantum: 5,
+        memorySize: 6,
+        pageReplacementIndex: 'FIFO',
+
         processes: [],
         diagram: [],
         clock: 0,
         queueProcesses: [],
         currentProcess: null,
-        quantum: 4,
-        contQuantum: 0
+        contQuantum: 0,
+        refPages: [],
+        memory: [],
+        pageErrors: 0,
+        pageSuccess: 0,
+        logMemory: []
     },
     methods: {
-        setProcesses(e) {
+        setProcesses() {
             this.processes = []
             this.diagram = []
             this.clock = 0
             this.queueProcesses = []
             this.currentProcess = null
-            let seletedValue = e.target.value
-            if (seletedValue != '') this.processes = dataset[seletedValue]
+            this.processes = dataset[this.datasetIndex]
             this.processes.forEach(proc => {
                 this.diagram.push({ id: proc.id, timeline: [] })
             })
+            this.refPages = []
+            this.memory = []
+            this.logMemory = []
+            this.pageErrors = 0
+            this.pageSucces = 0
+        },
+        setScheduling() {
+            switch (this.schedulingName) {
+                case 'FCFS':
+                    this.scheduling = this.fcfs
+                    break
+                case 'Round Robin':
+                    this.scheduling = this.roundRobin
+                    break;
+            }
+        },
+        scheduling() {
+            this.roundRobin()
         },
         passOneTick() {
             let newProcesses = this.processes.filter(proc => proc.start == this.clock)
@@ -88,7 +115,6 @@ let v = new Vue({
                 if (this.currentProcess.burst == 0) this.currentProcess = null
                 else {
                     let timelines = this.diagram.find(dProc => dProc.id == this.currentProcess.id).timeline
-                    console.log(timelines.length);
                     if (timelines.length > 0) {
                         if (timelines[timelines.length - 1].state != 'run') {
                             timelines.push({ start: this.clock, end: this.clock + 1, state: 'run' })
@@ -103,8 +129,8 @@ let v = new Vue({
 
             this.queueProcesses.forEach(proc => {
                 let timelines = this.diagram.find(dProc => dProc.id == proc.id).timeline
-                if(timelines.length > 0) {
-                    if(timelines[timelines.length-1].state != 'ready') {
+                if (timelines.length > 0) {
+                    if (timelines[timelines.length - 1].state != 'ready') {
                         timelines.push({ start: this.clock, end: this.clock + 1, state: 'ready' })
                     } else {
                         let runTimelines = timelines.filter(tl => tl.state == 'ready')
@@ -115,27 +141,17 @@ let v = new Vue({
                 }
             })
 
-            
-
             this.clock++
         },
         passTenTick() {
             for (let i = 0; i < 10; i++) this.passOneTick()
         },
-        setScheduling(e) {
-            switch (e.target.value) {
-                case 'FCFS':
-                    this.scheduling = this.fcfs
-                    break
-                case 'Round Robin':
-                    this.scheduling = this.roundRobin
-                    break;
-            }
-        },
         fcfs() {
             if (this.queueProcesses.length > 0) {
                 if (!this.currentProcess || this.currentProcess.burst == 0) {
                     this.currentProcess = this.queueProcesses.shift()
+                    console.log(this.refPages)
+                    this.addPagesToRef()
                 }
             }
         },
@@ -145,19 +161,106 @@ let v = new Vue({
                     if (this.currentProcess.burst == 0) {
                         this.currentProcess = this.queueProcesses.shift()
                         this.contQuantum = 1
+                        this.addPagesToRef()
                     } else if (this.contQuantum == this.quantum) {
                         this.queueProcesses.push(this.currentProcess)
                         this.currentProcess = this.queueProcesses.shift()
                         this.contQuantum = 1
+                        this.addPagesToRef()
                     } else this.contQuantum++
                 } else {
                     this.currentProcess = this.queueProcesses.shift()
                     this.contQuantum = 1
+                    this.addPagesToRef()
                 }
             }
         },
-        scheduling() {
-            this.roundRobin()
+        addPagesToRef() {
+            if (!this.currentProcess.frame) this.currentProcess.frame = 1
+            for (let i = 0; i < this.currentProcess.frame; i++)
+                this.refPages.push(`${this.currentProcess.id}.${i}`)
+        },
+        setPageReplacement() {
+            switch (this.pageReplacementIndex) {
+                case 'FIFO':
+                    this.pageReplacement = this.fifo
+                    break
+                case 'LRU':
+                    this.pageReplacement = this.lru
+                    break;
+                case 'OPT (Ótimo)':
+                    this.pageReplacement = this.opt
+                    break;
+            }
+        },
+        pageReplacement() {
+            this.fifo()
+        },
+        fifo() {
+            this.memory = []
+            this.logMemory = []
+            this.pageErrors = 0
+            this.pageSuccess = 0
+
+            this.refPages.forEach(page => {
+                let isOnMemory = this.memory.some(i => i == page)
+                if (!isOnMemory) {
+                    if (this.memory.length >= this.memorySize) this.memory.shift()
+                    this.memory.push(page)
+                    this.pageErrors++
+                } else this.pageSuccess++
+
+                let contId = isOnMemory ? this.pageSuccess : this.pageErrors
+                this.logMemory.push({ error: !isOnMemory, dump: `(${contId}) Páginas na memória: ${this.memory.join(' , ')}` })
+            })
+        },
+        lru() {
+            this.memory = []
+            this.logMemory = []
+            this.pageErrors = 0
+            this.pageSuccess = 0
+
+            this.refPages.forEach((page, index) => {
+                let isOnMemory = this.memory.some(i => i == page)
+                if (!isOnMemory) {
+                    if (this.memory.length >= this.memorySize) {
+                        let pass = this.refPages.slice(0, index)
+                        let dist = this.memory.map(f => pass.lastIndexOf(f))
+                        let adrr = dist.indexOf(-1);
+                        if (adrr == -1) adrr = dist.indexOf(Math.min(...dist))
+                        this.memory[adrr] = page
+                    } else this.memory.push(page)
+                    this.pageErrors++
+                } else this.pageSuccess++
+
+                let contId = isOnMemory ? this.pageSuccess : this.pageErrors
+                this.logMemory.push({ error: !isOnMemory, dump: `(${contId}) Páginas na memória: ${this.memory.join(' , ')}` })
+            })
+        },
+        opt() {
+            this.memory = []
+            this.logMemory = []
+            this.pageErrors = 0
+            this.pageSuccess = 0
+
+            this.refPages.forEach((page, index) => {
+                let isOnMemory = this.memory.some(i => i == page)
+                if (!isOnMemory) {
+                    if (this.memory.length >= this.memorySize) {
+                        let dist = this.memory.map(f => this.refPages.slice(index + 1).indexOf(f))
+                        let adrr = dist.indexOf(-1)
+                        if(adrr == -1) adrr = dist.indexOf(Math.max(...dist))
+                        this.memory[adrr] = page
+                    } else this.memory.push(page)
+                    this.pageErrors++
+                } else this.pageSuccess++
+
+                let contId = isOnMemory ? this.pageSuccess : this.pageErrors
+                this.logMemory.push({ error: !isOnMemory, dump: `(${contId}) Páginas na memória: ${this.memory.join(' , ')}` })
+            })
         }
-    }
+    },
 })
+
+instance.setProcesses()
+instance.setPageReplacement()

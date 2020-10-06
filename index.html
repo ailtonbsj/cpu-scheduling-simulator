@@ -10,9 +10,11 @@
         * {
             font-family: monospace;
         }
+
         /* Diagram of states */
         .process {
-            position: relative; margin: 10px 0;
+            position: relative;
+            margin: 10px 0;
         }
 
         .interval {
@@ -32,33 +34,114 @@
         .wait {
             background-color: #FF0000AA;
         }
+
+        fieldset {
+            margin: 10px 0;
+            padding-bottom: 0;
+        }
+
+        .diagrama {
+            overflow-x: scroll;
+            overflow-y: hidden;
+        }
+
+        .errorPage {
+            background-color: #FF0000AA;
+            margin: 5px 0;
+            padding: 5px;
+            border-radius: 5px;
+        }
+
+        .successPage {
+            background-color: #00FF00AA;
+            margin: 5px 0;
+            padding: 5px;
+            border-radius: 5px;
+        }
+
+        table {
+            width: 100%;
+        }
+
+        table,
+        td,
+        tr,
+        th {
+            border: 1px solid gray;
+        }
     </style>
 </head>
 
 <body>
     <div id="app">
         Conjunto
-        <select @change="setProcesses">
-            <option></option>
+        <select v-model="datasetIndex" @change="setProcesses">
             <option v-for="(p, i) in dataset" :value="i">{{ i }}</option>
         </select>
         Escalonador
-        <select @change="setScheduling">
-            <option>Round Robin</option>
+        <select v-model="schedulingName" @change="setScheduling">
             <option>FCFS</option>
+            <option>Round Robin</option>
         </select>
         Quantum
         <input type="number" min="0" max="20" v-model="quantum">
+        Tamanho da Memoria
+        <input type="number" min="0" max="20" v-model="memorySize">
         <button @click="passOneTick">Proximo Passo de CPU</button>
         <button @click="passTenTick">10 Passos de CPU</button>
-        <div>
-            <div class="process" v-for="process in diagram">
-                {{ process.id }}
-                <span class="interval" v-for="int in process.timeline"
-                    :style="{ left: 20 + (int.start*10) + 'px', width: (int.end-int.start)*10 +'px' }"
-                    :class="{ ready: int.state == 'ready', wait: int.state == 'wait' }" :title="`[ ${int.start} , ${int.end} [`"></span>
+        <fieldset>
+            <legend>Diagrama de Escalonamento</legend>
+            <div class="diagrama">
+                <div class="process" v-for="process in diagram">
+                    {{ process.id }}
+                    <span class="interval" v-for="int in process.timeline"
+                        :style="{ left: 20 + (int.start*10) + 'px', width: (int.end-int.start)*10 +'px' }"
+                        :class="{ ready: int.state == 'ready', wait: int.state == 'wait' }"
+                        :title="`[ ${int.start} , ${int.end} [`"></span>
+                </div>
             </div>
+        </fieldset>
+        <fieldset>
+            <legend>Páginas referenciadas</legend>
+            {{ refPages.join(" , ") }}
+        </fieldset>
+        Substituição de páginas
+        <select v-model="pageReplacementIndex" @change="setPageReplacement">
+            <option>FIFO</option>
+            <option>LRU</option>
+            <option>OPT (Ótimo)</option>
+        </select>
+        <button @click="pageReplacement">Aplicar</button>
+        <div>
+            <br>
+            Total de erros de páginas: {{ pageErrors }}<br>
+            Total de páginas com sucesso: {{ pageSuccess }}
         </div>
+        <fieldset>
+            <legend>Log da memória</legend>
+            <div v-for="log in logMemory" :class="{errorPage: log.error, successPage: !log.error}">
+                {{ log.dump }}
+            </div>
+        </fieldset>
+        <fieldset>
+            <legend>Tabela Dinâmica</legend>
+            <table>
+                <tbody>
+                    <tr>
+                        <th>Id</th>
+                        <th>Inicio</th>
+                        <th>rajada</th>
+                        <th>quadro</th>
+                    </tr>
+                    <tr v-for="p in processes">
+                        <td>{{ p.id }}</td>
+                        <td>{{ p.start }}</td>
+                        <td>{{ p.burst }}</td>
+                        <td>{{ p.frame || 1 }}</td>
+                    </tr>
+                </tbody>
+            </table>
+        </fieldset>
     </div>
     <h1>Equipe:</h1>
     <h4>Cícera Adejane Moreira da Silva</h4>
@@ -66,7 +149,6 @@
     <h4>Glendha Rayla da Silva Oliveira</h4>
     <h4>João Marllon de Freitas Silva</h4>
     <h4>José Ailton Batista da Silva</h4>
-    <a href="old.html">Acesse a versão antiga do simulador!</a>
     <script src="simu.js"></script>
 </body>
 
