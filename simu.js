@@ -191,6 +191,9 @@ let instance = new Vue({
                 case 'OPT (Ótimo)':
                     this.pageReplacement = this.opt
                     break;
+                case 'Segunda Chance':
+                    this.pageReplacement = this.secondChance
+                    break;
             }
         },
         pageReplacement() {
@@ -211,7 +214,10 @@ let instance = new Vue({
                 } else this.pageSuccess++
 
                 let contId = isOnMemory ? this.pageSuccess : this.pageErrors
-                this.logMemory.push({ error: !isOnMemory, dump: `(${contId}) Páginas na memória: ${this.memory.join(' , ')}` })
+                this.logMemory.push({
+                    bg: isOnMemory ? 'successPage' : 'errorPage',
+                    dump: `(${contId}) Páginas na memória: ${this.memory.join(' , ')}`
+                })
             })
         },
         lru() {
@@ -234,7 +240,10 @@ let instance = new Vue({
                 } else this.pageSuccess++
 
                 let contId = isOnMemory ? this.pageSuccess : this.pageErrors
-                this.logMemory.push({ error: !isOnMemory, dump: `(${contId}) Páginas na memória: ${this.memory.join(' , ')}` })
+                this.logMemory.push({
+                    bg: isOnMemory ? 'successPage' : 'errorPage',
+                    dump: `(${contId}) Páginas na memória: ${this.memory.join(' , ')}`
+                })
             })
         },
         opt() {
@@ -249,14 +258,52 @@ let instance = new Vue({
                     if (this.memory.length >= this.memorySize) {
                         let dist = this.memory.map(f => this.refPages.slice(index + 1).indexOf(f))
                         let adrr = dist.indexOf(-1)
-                        if(adrr == -1) adrr = dist.indexOf(Math.max(...dist))
+                        if (adrr == -1) adrr = dist.indexOf(Math.max(...dist))
                         this.memory[adrr] = page
                     } else this.memory.push(page)
                     this.pageErrors++
                 } else this.pageSuccess++
 
                 let contId = isOnMemory ? this.pageSuccess : this.pageErrors
-                this.logMemory.push({ error: !isOnMemory, dump: `(${contId}) Páginas na memória: ${this.memory.join(' , ')}` })
+                this.logMemory.push({
+                    bg: isOnMemory ? 'successPage' : 'errorPage',
+                    dump: `(${contId}) Páginas na memória: ${this.memory.join(' , ')}`
+                })
+            })
+        },
+        secondChance() {
+            this.memory = []
+            this.logMemory = []
+            this.pageErrors = 0
+            this.pageSuccess = 0
+
+            this.refPages.forEach(page => {
+                let isOnMemory = this.memory.some(i => i.id == page)
+                if (!isOnMemory) {
+                    if (this.memory.length >= this.memorySize) {
+                        let hasSecondChance = true
+                        while (hasSecondChance) {
+                            let p = this.memory.shift()
+                            if (p.refbit) {
+                                p.refbit = 0
+                                this.memory.push(p)
+                                // Gained second chance!
+                                this.logMemory.push({
+                                    bg: 'secondChance',
+                                    dump: `Segunda Chance: ${this.memory.map(m => m.id).join(' , ')}`
+                                })
+                            } else hasSecondChance = false
+                        }
+                    }
+                    this.memory.push({ id: page, refbit: 1 })
+                    this.pageErrors++
+                } else this.pageSuccess++
+
+                let contId = isOnMemory ? this.pageSuccess : this.pageErrors
+                this.logMemory.push({
+                    bg: isOnMemory ? 'successPage' : 'errorPage',
+                    dump: `(${contId}) Páginas na memória: ${this.memory.map(p => p.id).join(' , ')}`
+                })
             })
         }
     },

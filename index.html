@@ -59,6 +59,14 @@
             border-radius: 5px;
         }
 
+        .secondChance {
+            background-color: #FFFF00AA;
+            margin: 5px 0;
+            padding: 5px;
+            border-radius: 5px;
+        }
+        
+
         table {
             width: 100%;
         }
@@ -103,13 +111,14 @@
         </fieldset>
         <fieldset>
             <legend>Páginas referenciadas</legend>
-            {{ refPages.join(" , ") }}
+            {{ refPages.join(' , ') }}
         </fieldset>
         Substituição de páginas
         <select v-model="pageReplacementIndex" @change="setPageReplacement">
             <option>FIFO</option>
             <option>LRU</option>
             <option>OPT (Ótimo)</option>
+            <option>Segunda Chance</option>
         </select>
         <button @click="pageReplacement">Aplicar</button>
         <div>
@@ -119,7 +128,7 @@
         </div>
         <fieldset>
             <legend>Log da memória</legend>
-            <div v-for="log in logMemory" :class="{errorPage: log.error, successPage: !log.error}">
+            <div v-for="log in logMemory" :class="log.bg">
                 {{ log.dump }}
             </div>
         </fieldset>
