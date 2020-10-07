@@ -194,11 +194,17 @@ let instance = new Vue({
                 case 'Segunda Chance':
                     this.pageReplacement = this.secondChance
                     break;
-                case 'LFU (Não deterministico)':
+                case 'LFU':
                     this.pageReplacement = this.lfu
                     break;
-                case 'MFU (Não deterministico)':
+                case 'MFU':
                     this.pageReplacement = this.mfu
+                    break;
+                case 'LFU (Não deterministico)':
+                    this.pageReplacement = this.lfuNotDet
+                    break;
+                case 'MFU (Não deterministico)':
+                    this.pageReplacement = this.mfuNotDet
                     break;
             }
         },
@@ -313,12 +319,18 @@ let instance = new Vue({
             })
         },
         lfu() {
-            this.frequentlyUsed(true)
+            this.frequentlyUsed(true, true)
         },
         mfu() {
-            this.frequentlyUsed(false)
+            this.frequentlyUsed(false, true)
         },
-        frequentlyUsed(isLeast) {
+        lfuNotDet() {
+            this.frequentlyUsed(true, false)
+        },
+        mfuNotDet() {
+            this.frequentlyUsed(false, false)
+        },
+        frequentlyUsed(isLeast, isDet) {
             this.memory = []
             this.logMemory = []
             this.pageErrors = 0
@@ -330,16 +342,17 @@ let instance = new Vue({
                 if (item == undefined) freq.push({ id: page, freq: 1 })
                 else item.freq++
 
-                let isOnMemory = this.memory.some(i => i.id == page)
+                let isOnMemory = this.memory.some(i => i == page)
+
                 if (!isOnMemory) {
                     if (this.memory.length >= this.memorySize) {
                         let freqMem = this.memory
                             .map((p, index) => Object.assign(freq.find(i => i.id == p), { index }))
                             .sort((a, b) => isLeast ? a.freq - b.freq : b.freq - a.freq)
 
-                        // Nao deterministico
                         let repeatedFreq = freqMem.filter(f => f.freq == freqMem[0].freq)
-                        this.memory[repeatedFreq[Math.floor(Math.random()*repeatedFreq.length)].index] = page
+                        let det = isDet ? 0 : Math.floor(Math.random() * repeatedFreq.length)
+                        this.memory[repeatedFreq[det].index] = page
                     } else this.memory.push(page)
                     this.pageErrors++
                 } else this.pageSuccess++
