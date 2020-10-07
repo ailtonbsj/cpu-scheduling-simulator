@@ -194,6 +194,12 @@ let instance = new Vue({
                 case 'Segunda Chance':
                     this.pageReplacement = this.secondChance
                     break;
+                case 'LFU (Não deterministico)':
+                    this.pageReplacement = this.lfu
+                    break;
+                case 'MFU (Não deterministico)':
+                    this.pageReplacement = this.mfu
+                    break;
             }
         },
         pageReplacement() {
@@ -303,6 +309,45 @@ let instance = new Vue({
                 this.logMemory.push({
                     bg: isOnMemory ? 'successPage' : 'errorPage',
                     dump: `(${contId}) Páginas na memória: ${this.memory.map(p => p.id).join(' , ')}`
+                })
+            })
+        },
+        lfu() {
+            this.frequentlyUsed(true)
+        },
+        mfu() {
+            this.frequentlyUsed(false)
+        },
+        frequentlyUsed(isLeast) {
+            this.memory = []
+            this.logMemory = []
+            this.pageErrors = 0
+            this.pageSuccess = 0
+
+            let freq = [];
+            this.refPages.forEach(page => {
+                let item = freq.find(i => i.id == page)
+                if (item == undefined) freq.push({ id: page, freq: 1 })
+                else item.freq++
+
+                let isOnMemory = this.memory.some(i => i.id == page)
+                if (!isOnMemory) {
+                    if (this.memory.length >= this.memorySize) {
+                        let freqMem = this.memory
+                            .map((p, index) => Object.assign(freq.find(i => i.id == p), { index }))
+                            .sort((a, b) => isLeast ? a.freq - b.freq : b.freq - a.freq)
+
+                        // Nao deterministico
+                        let repeatedFreq = freqMem.filter(f => f.freq == freqMem[0].freq)
+                        this.memory[repeatedFreq[Math.floor(Math.random()*repeatedFreq.length)].index] = page
+                    } else this.memory.push(page)
+                    this.pageErrors++
+                } else this.pageSuccess++
+
+                let contId = isOnMemory ? this.pageSuccess : this.pageErrors
+                this.logMemory.push({
+                    bg: isOnMemory ? 'successPage' : 'errorPage',
+                    dump: `(${contId}) Páginas na memória: ${this.memory.join(' , ')}`
                 })
             })
         }
