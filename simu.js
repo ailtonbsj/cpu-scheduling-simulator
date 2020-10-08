@@ -62,6 +62,7 @@ let instance = new Vue({
         quantum: 5,
         memorySize: 6,
         pageReplacementIndex: 'FIFO',
+        enableRefBit: 4,
 
         processes: [],
         diagram: [],
@@ -307,7 +308,11 @@ let instance = new Vue({
                             } else hasSecondChance = false
                         }
                     }
-                    this.memory.push({ id: page, refbit: 1 })
+                    //console.log(this.processes.find(pc => pc.id = page.split('.')[0]).priority)
+                    let refbit = this.processes.find(
+                        pc => pc.id == page.split('.')[0]
+                    ).priority >= this.enableRefBit ? 1 : 0
+                    this.memory.push({ id: page, refbit })
                     this.pageErrors++
                 } else this.pageSuccess++
 

@@ -124,6 +124,8 @@
             <option>LFU (Não deterministico)</option>
             <option>MFU (Não deterministico)</option>
         </select>
+        Bit de segunda chance com prioridade acima de:
+        <input type="text" v-model="enableRefBit">
         <button @click="pageReplacement">Aplicar</button>
         <div>
             <br>
@@ -143,13 +145,15 @@
                     <tr>
                         <th>Id</th>
                         <th>Inicio</th>
-                        <th>rajada</th>
-                        <th>quadro</th>
+                        <th>Rajada</th>
+                        <th>Prioridade</th>
+                        <th>Quadros</th>
                     </tr>
                     <tr v-for="p in processes">
                         <td>{{ p.id }}</td>
                         <td>{{ p.start }}</td>
                         <td>{{ p.burst }}</td>
+                        <td>{{ p.priority || 0 }}</td>
                         <td>{{ p.frame || 1 }}</td>
                     </tr>
                 </tbody>
